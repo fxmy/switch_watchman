@@ -1,11 +1,13 @@
 {application, switch_watchman,
- [{description, "An OTP application"},
-  {vsn, "0.1.0"},
+ [{description, "Network switch overseer"},
+  {vsn, "0.0.1"},
   {registered, []},
   {mod, { switch_watchman_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    n2o,
+    syn
    ]},
   {env,[]},
   {modules, []},
