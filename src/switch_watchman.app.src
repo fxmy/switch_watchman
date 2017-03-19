@@ -6,8 +6,9 @@
   {applications,
    [kernel,
     stdlib,
-    n2o,
-    syn
+    snmp,
+    syn,
+    n2o
    ]},
   {env,[]},
   {modules, []},

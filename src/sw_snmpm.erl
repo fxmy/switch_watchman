@@ -35,7 +35,7 @@ table_recurse(User, Agent, OidRoot, OidPre, Acc) ->
 %    false ->
 %      {ok, Acc};
 %    true ->
-  error_logger:info_msg("table_recurse: ~p, ~p, ~p", [OidRoot, OidPre, Acc]),
+  %error_logger:info_msg("table_recurse: ~p, ~p, ~p", [OidRoot, OidPre, Acc]),
   case snmpm:sync_get_next(User, Agent, [OidPre]) of
     {error, Why} ->
       {error, Why};
@@ -70,7 +70,7 @@ update_acc({noError, _ErrIdx, [Varbind=#varbind{}]}, Acc) ->
            false ->
              [{EntryIdx, Map1} | Acc]
          end,
-  error_logger:info_msg("update_acc: ~p, ~p", [Acc1, Oid]),
+  %error_logger:info_msg("update_acc: ~p, ~p", [Acc1, Oid]),
   {Acc1, Oid}.
 
 
