@@ -134,18 +134,25 @@ rem_entry_2_edge(From, LocPortTable) ->
   fun({RemIdx, RemEntry}, AccIn) ->
       {_, To} = maps:get(lldpRemChassisId, RemEntry),
       {_, RemPortId} = maps:get(lldpRemPortId, RemEntry),
-      {_, LocPortId} = rem_tab_idx_2_loc_port_id(RemIdx, LocPortTable),
+      {_, RemPortDesc} = maps:get(lldpRemPortDesc, RemEntry),
+      {_, LocPortId} =
+      rem_tab_idx_2_loc_port(RemIdx, lldpLocPortId, LocPortTable),
+      {_, LocPortDesc} =
+      rem_tab_idx_2_loc_port(RemIdx, lldpLocPortDesc, LocPortTable),
       Res = #{from => From,
               to => To,
               lldpRemPortId => RemPortId,
-              lldpLocPortId => LocPortId},
+              lldpRemPortDesc => RemPortDesc,
+              lldpLocPortId => LocPortId,
+              lldpLocPortDesc => LocPortDesc},
       [Res|AccIn]
   end.
 
--spec rem_tab_idx_2_loc_port_id(RemIdx, LocPortTable) ->
+-spec rem_tab_idx_2_loc_port(RemIdx, Key, LocPortTable) ->
   list()
     when RemIdx :: list(),
+         Key :: atom(),
          LocPortTable :: proplists:proplist().
-rem_tab_idx_2_loc_port_id([_LongInt, PortIdx, _Sub], LocPortTable) ->
+rem_tab_idx_2_loc_port([_LongInt, PortIdx, _Sub], Key, LocPortTable) ->
   Map = proplists:get_value([PortIdx], LocPortTable, #{}),
-  maps:get(lldpLocPortId, Map, "not_found").
+  maps:get(Key, Map, "not_found").
