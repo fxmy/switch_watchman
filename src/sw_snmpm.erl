@@ -3,6 +3,8 @@
 
 -include_lib("snmp/include/snmp_types.hrl").
 
+-compile([export_all]).
+
 -export([start_link/3]).
 -export([init/1,
          handle_info/2,
@@ -38,7 +40,20 @@ init([User, Agent, ManagedObjects]) ->
   {noreply, #state{}} |
   {noreply, #state{}, Timeout :: non_neg_integer()} |
   {stop, Reason :: any(), #state{}}.
-handle_info(update_lldp, State) ->
+handle_info(update_lldp,
+            State=#state{snmpm_user=User,
+                         snmpm_agent=Agent,
+                         scalars=Scalars,
+                         tables=Tables}) ->
+  %% LldpLocScalar = [lldpLocChassisId,lldpLocChassisIdSubtype,lldpLocSysName],
+  ScalarData = get_scalar_instances(User,
+                                 Agent,
+                                 Scalars),
+  TableData = get_table_instances(User,
+                                  Agent,
+                                  Tables),
+  {LocalVertex, RemVertices} = sw_lldp_util:parse_vertex(ScalarData, TableData),
+  %_Edges = sw_lldp_util:parse_edge(ScalarData, TableData),
   %% TODO
   {noreply, State}.
 
@@ -48,6 +63,59 @@ terminate(Reason, _State) ->
   error_logger:info_msg("Terminating sw_snmpm ~p with reason: ~p", [#state.snmpm_agent, Reason]),
   terminated.
 
+%% ============================================
+%% Internal
+%% ============================================
+
+-spec get_scalar_instances(User :: term(), Agent :: term(), Scalars :: [atom()]) ->
+  ProList :: proplists:proplist().
+get_scalar_instances(User, Agent, ScalarNames) ->
+  Varbinds =
+  lists:foldl(
+    fun(Name, AccIn) ->
+        [yank_varbid(scalar(User, Agent, Name))|AccIn]
+    end, [], ScalarNames),
+  lists:zip(ScalarNames, lists:reverse(Varbinds)).
+
+-spec yank_varbid({ok, SnmpReply, Remaining} |
+                  {error, Why}) ->
+  Varbind | Why
+    when SnmpReply :: snmpm:snmp_reply(),
+         Remaining :: integer(),
+         Varbind :: snmp:varbind(),
+         Why :: term().
+yank_varbid({error, Why}) ->
+  Why;
+yank_varbid({ok, {_ErrStatus, _ErrIdx, [Varbind=#varbind{}]}, _Remaining}) ->
+  Varbind.
+
+-spec scalar(User, Agent, Name) ->
+  {ok, SnmpReply, Remaining} | {error, Why}
+    when User :: term(),
+         Agent :: term(),
+         Name :: atom(),
+         SnmpReply :: snmpm:snmp_reply(),
+         Remaining :: integer(),
+         Why :: term().
+scalar(User, Agent, Name) ->
+  case snmpm:name_to_oid(Name) of
+    {error, Why} ->
+      {error, Why};
+    {ok, Oids} ->
+      snmpm:sync_get_next(User, Agent, Oids)
+  end.
+
+-spec get_table_instances(User, Agent, Tables) ->
+  [tuple()] when User :: term(),
+                 Agent :: term(),
+                 Tables :: [atom()].
+get_table_instances(User, Agent, Tables) ->
+  TData =
+  lists:foldl(fun(TableName,AccIn) ->
+                  {_OkORError, Res} = table(User, Agent, TableName),
+                  [Res|AccIn]
+              end, [], Tables),
+  lists:zip(Tables, lists:reverse(TData)).
 
 -spec table(User, Agent, Name) ->
   {ok, ProList} | {error, Why}
@@ -97,7 +165,7 @@ table_recurse(User, Agent, OidRoot, OidPre, Acc) ->
 
 
 -spec extract_oid({noError, _ErrIdx :: snmpm:error_index(), [#varbind{}]}) ->
-  Oid :: snmpm:oid().
+  Oid :: snmp:oid().
 extract_oid({noError, _ErrIdx, [Varbind=#varbind{}]}) ->
   Varbind#varbind.oid;
 extract_oid(_) ->
@@ -106,7 +174,7 @@ extract_oid(_) ->
 
 -spec update_acc({noError, _ErrIdx :: snmpm:error_index(), [#varbind{}]},
                  Acc :: proplists:proplist()) ->
-  {Acc1 :: proplists:prolist(), Oid :: snmpm:oid()}.
+  {Acc1 :: proplists:prolist(), Oid :: snmp:oid()}.
 update_acc({noError, _ErrIdx, [Varbind=#varbind{}]}, Acc) ->
   Oid = Varbind#varbind.oid,
   VarType = Varbind#varbind.variabletype,
@@ -124,12 +192,12 @@ update_acc({noError, _ErrIdx, [Varbind=#varbind{}]}, Acc) ->
   {Acc1, Oid}.
 
 
--spec mib_entry_type(Oid :: snmpm:oid()) ->
+-spec mib_entry_type(Oid :: snmp:oid()) ->
   {[integer()], atom()}.
 mib_entry_type(Oid) when is_list(Oid) ->
   mib_entry_type(Oid, []).
 
--spec mib_entry_type(Oid :: snmpm:oid(), [integer()]) ->
+-spec mib_entry_type(Oid :: snmp:oid(), [integer()]) ->
   {[integer()], atom()}.
 mib_entry_type(Oid, EntryIdx) ->
   %error_logger:info_msg("mib_entry_type: ~p, ~p", [Oid, EntryIdx]),
@@ -138,6 +206,6 @@ mib_entry_type(Oid, EntryIdx) ->
       [EntryIdxUpper|OidUpper] = lists:reverse(Oid),
       mib_entry_type(lists:reverse(OidUpper), [EntryIdxUpper|EntryIdx]);
     {ok, EntryType} ->
-      error_logger:info_msg("EntryIdx: ~p, EntryType: ~p~n", [EntryIdx, EntryType]),
+      %error_logger:info_msg("EntryIdx: ~p, EntryType: ~p~n", [EntryIdx, EntryType]),
       {EntryIdx, EntryType}
   end.
