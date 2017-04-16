@@ -36,26 +36,25 @@ init([User, Agent, ManagedObjects]) ->
               tables = Tables}}.
 
 
--spec handle_info(Info :: atom(), #state{}) ->
+-spec handle_info({Info :: atom(), From :: pid()},
+                  #state{}) ->
   {noreply, #state{}} |
   {noreply, #state{}, Timeout :: non_neg_integer()} |
   {stop, Reason :: any(), #state{}}.
-handle_info(update_lldp,
+handle_info({update_lldp, From},
             State=#state{snmpm_user=User,
                          snmpm_agent=Agent,
                          scalars=Scalars,
                          tables=Tables}) ->
-  %% LldpLocScalar = [lldpLocChassisId,lldpLocChassisIdSubtype,lldpLocSysName],
-  ScalarData = get_scalar_instances(User,
-                                 Agent,
-                                 Scalars),
-  TableData = get_table_instances(User,
-                                  Agent,
-                                  Tables),
-  {LocalVertex, RemVertices} = sw_lldp_util:parse_vertex(ScalarData, TableData),
+  ScalarData =
+  get_scalar_instances(User, Agent, Scalars),
+  TableData =
+  get_table_instances(User, Agent, Tables),
+  {LocalVertex, RemVertices} =
+  sw_lldp_util:parse_vertex(ScalarData, TableData),
   Edges = sw_lldp_util:parse_edge(LocalVertex, TableData),
-  %% TODO
-  {noreply, {{LocalVertex, RemVertices}, Edges }}.
+  gen_server:cast(From, {[LocalVertex|RemVertices], Edges}),
+  {noreply, State}.
 
 
 -spec terminate(Reason :: any(), #state{}) -> terminated.
