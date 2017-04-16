@@ -53,9 +53,9 @@ handle_info(update_lldp,
                                   Agent,
                                   Tables),
   {LocalVertex, RemVertices} = sw_lldp_util:parse_vertex(ScalarData, TableData),
-  %_Edges = sw_lldp_util:parse_edge(ScalarData, TableData),
+  Edges = sw_lldp_util:parse_edge(LocalVertex, TableData),
   %% TODO
-  {noreply, State}.
+  {noreply, {{LocalVertex, RemVertices}, Edges }}.
 
 
 -spec terminate(Reason :: any(), #state{}) -> terminated.
@@ -68,7 +68,7 @@ terminate(Reason, _State) ->
 %% ============================================
 
 -spec get_scalar_instances(User :: term(), Agent :: term(), Scalars :: [atom()]) ->
-  ProList :: proplists:proplist().
+  [tuple()].
 get_scalar_instances(User, Agent, ScalarNames) ->
   Varbinds =
   lists:foldl(

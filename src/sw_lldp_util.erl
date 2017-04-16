@@ -52,6 +52,10 @@ lldpChassisId(#varbind{value=Value}) ->
 lldpChassisId(Id) ->
   Id.
 
+%%%==============================
+%%% vertices
+%%%==============================
+
 -spec parse_vertex(LocalScalar, Tables) ->
   {maps:map(), [maps:map()]} when
     LocalScalar :: proplists:proplist(),
@@ -91,11 +95,6 @@ parse_rem_vertex({_Idx, LldpRemMap}, AccIn)
      lldpSysName => lldpSysName(SysName)}
    | AccIn].
 
-
-
-
-
-
 -spec parse_local_vertex(LocalScalar, AccIn) ->
   maps:map() when
     LocalScalar :: {atom(), #varbind{}} |
@@ -115,3 +114,38 @@ parse_local_vertex({lldpLocChassisId, Varbind=#varbind{}},
   AccIn#{lldpChassisId => ChassisId};
 parse_local_vertex(_, AccIn) ->
   AccIn.
+
+%%%==============================
+%%% Edges
+%%%==============================
+
+-spec parse_edge(LocalVertex, TableData) ->
+  [maps:map()]
+    when LocalVertex :: maps:map(),
+         TableData :: [tuple()].
+parse_edge(LocalVertex, TableData) ->
+  From = maps:get(lldpChassisId, LocalVertex),
+  RemTable = proplists:get_value(lldpRemTable, TableData),
+  LocPortTable = proplists:get_value(lldpLocPortTable, TableData),
+  lists:foldl(rem_entry_2_edge(From, LocPortTable),
+              [], RemTable).
+
+rem_entry_2_edge(From, LocPortTable) ->
+  fun({RemIdx, RemEntry}, AccIn) ->
+      {_, To} = maps:get(lldpRemChassisId, RemEntry),
+      {_, RemPortId} = maps:get(lldpRemPortId, RemEntry),
+      {_, LocPortId} = rem_tab_idx_2_loc_port_id(RemIdx, LocPortTable),
+      Res = #{from => From,
+              to => To,
+              lldpRemPortId => RemPortId,
+              lldpLocPortId => LocPortId},
+      [Res|AccIn]
+  end.
+
+-spec rem_tab_idx_2_loc_port_id(RemIdx, LocPortTable) ->
+  list()
+    when RemIdx :: list(),
+         LocPortTable :: proplists:proplist().
+rem_tab_idx_2_loc_port_id([_LongInt, PortIdx, _Sub], LocPortTable) ->
+  Map = proplists:get_value([PortIdx], LocPortTable, #{}),
+  maps:get(lldpLocPortId, Map, "not_found").
