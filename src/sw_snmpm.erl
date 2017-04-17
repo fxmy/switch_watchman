@@ -27,8 +27,12 @@ start_link(User, Agent, ManagedObjects) ->
   ignore |
   {stop, Reason :: any()}.
 init([User, Agent, ManagedObjects]) ->
-  Scalars = proplists:get_all_values(scalar, ManagedObjects),
-  Tables = proplists:get_all_values(table, ManagedObjects),
+  Scalars =
+  lists:flatten(
+    proplists:get_all_values(scalar, ManagedObjects)),
+  Tables =
+  lists:flatten(
+    proplists:get_all_values(table, ManagedObjects)),
   ok = syn:join(sw_topo, self()),
   {ok, #state{snmpm_user = User,
               snmpm_agent = Agent,

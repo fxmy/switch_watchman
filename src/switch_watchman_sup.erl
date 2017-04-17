@@ -29,11 +29,19 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1}, [spec()]} }.
+    {ok, {{one_for_one, 0, 1},
+           [spec(),
+            %% TODO
+            %% sw_topo(),
+            sw_snmpm_sup()]}}.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+sw_topo() ->
+  {sw_topo, {sw_topo, start_link, []}, permanent, 5000, worker, [sw_topo]}.
+sw_snmpm_sup() ->
+  {sw_snmpm_sup, {sw_snmpm_sup, start_link, []}, permanent, 5000, supervisor, [sw_snmpm_sup]}.
 spec()   -> ranch:child_spec(http, 100, ranch_tcp, port(), cowboy_protocol, env()).
 env()    -> [ { env, [ { dispatch, points() } ] } ].
 static() ->   { dir, "priv/assets", mime() }.
