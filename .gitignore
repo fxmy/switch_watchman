@@ -18,3 +18,5 @@ rebar3.crashdump
 
 deps
 .applist
+
+manager/db/snmpm_config_db
