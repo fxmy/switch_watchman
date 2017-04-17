@@ -80,6 +80,7 @@ get_scalar_instances(User, Agent, ScalarNames) ->
     end, [], ScalarNames),
   lists:zip(ScalarNames, lists:reverse(Varbinds)).
 
+
 -spec yank_varbid({ok, SnmpReply, Remaining} |
                   {error, Why}) ->
   Varbind | Why
@@ -91,6 +92,7 @@ yank_varbid({error, Why}) ->
   Why;
 yank_varbid({ok, {_ErrStatus, _ErrIdx, [Varbind=#varbind{}]}, _Remaining}) ->
   Varbind.
+
 
 -spec scalar(User, Agent, Name) ->
   {ok, SnmpReply, Remaining} | {error, Why}
@@ -108,6 +110,7 @@ scalar(User, Agent, Name) ->
       snmpm:sync_get_next(User, Agent, Oids)
   end.
 
+
 -spec get_table_instances(User, Agent, Tables) ->
   [tuple()] when User :: term(),
                  Agent :: term(),
@@ -119,6 +122,7 @@ get_table_instances(User, Agent, Tables) ->
                   [Res|AccIn]
               end, [], Tables),
   lists:zip(Tables, lists:reverse(TData)).
+
 
 -spec table(User, Agent, Name) ->
   {ok, ProList} | {error, Why}
@@ -199,6 +203,7 @@ update_acc({noError, _ErrIdx, [Varbind=#varbind{}]}, Acc) ->
   {[integer()], atom()}.
 mib_entry_type(Oid) when is_list(Oid) ->
   mib_entry_type(Oid, []).
+
 
 -spec mib_entry_type(Oid :: snmp:oid(), [integer()]) ->
   {[integer()], atom()}.
