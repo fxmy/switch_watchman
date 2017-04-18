@@ -153,6 +153,7 @@ rem_entry_2_edge(From, LocPortTable) ->
     when RemIdx :: list(),
          Key :: atom(),
          LocPortTable :: proplists:proplist().
-rem_tab_idx_2_loc_port([_LongInt, PortIdx, _Sub], Key, LocPortTable) ->
+rem_tab_idx_2_loc_port([_LongInt, PortIdx, _NeighborIdx],
+                       Key, LocPortTable) ->
   Map = proplists:get_value([PortIdx], LocPortTable, #{}),
   maps:get(Key, Map, "not_found").
