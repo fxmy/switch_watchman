@@ -57,7 +57,7 @@ handle_info({update_lldp, From},
   {LocalVertex, RemVertices} =
   sw_lldp_util:parse_vertex(ScalarData, TableData),
   Edges = sw_lldp_util:parse_edge(LocalVertex, TableData),
-  gen_server:cast(From, {update_lldp, [LocalVertex|RemVertices], Edges}),
+  gen_server:cast(From, {local_topo, [LocalVertex|RemVertices], Edges}),
   {noreply, State}.
 
 
