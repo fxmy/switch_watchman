@@ -73,12 +73,15 @@ terminate(Reason, _State) ->
 -spec get_scalar_instances(User :: term(), Agent :: term(), Scalars :: [atom()]) ->
   [tuple()].
 get_scalar_instances(User, Agent, ScalarNames) ->
-  Varbinds =
-  lists:foldl(
-    fun(Name, AccIn) ->
-        [yank_varbid(scalar(User, Agent, Name))|AccIn]
-    end, [], ScalarNames),
-  lists:zip(ScalarNames, lists:reverse(Varbinds)).
+  % Varbinds =
+  % lists:foldl(
+  %   fun(Name, AccIn) ->
+  %       [yank_varbid(scalar(User, Agent, Name))|AccIn]
+  %   end, [], ScalarNames),
+  Varbinds = [yank_varbid(scalar(User, Agent, Name))
+        || Name <- ScalarNames],
+  % Vb = lists:reverse(Varbinds),
+  lists:zip(ScalarNames, Varbinds).
 
 
 -spec yank_varbid({ok, SnmpReply, Remaining} |
@@ -116,12 +119,18 @@ scalar(User, Agent, Name) ->
                  Agent :: term(),
                  Tables :: [atom()].
 get_table_instances(User, Agent, Tables) ->
-  TData =
-  lists:foldl(fun(TableName,AccIn) ->
-                  {_OkORError, Res} = table(User, Agent, TableName),
-                  [Res|AccIn]
-              end, [], Tables),
-  lists:zip(Tables, lists:reverse(TData)).
+  % TData =
+  % lists:foldl(fun(TableName,AccIn) ->
+  %                 {_OkORError, Res} = table(User, Agent, TableName),
+  %                 [Res|AccIn]
+  %             end, [], Tables),
+  TData = [begin
+          {_OkORError, Res} = table(User, Agent, TableName),
+          Res
+        end
+        || TableName <- Tables],
+  % TD = lists:reverse(TData),
+  lists:zip(Tables, TData).
 
 
 -spec table(User, Agent, Name) ->
