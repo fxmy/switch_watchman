@@ -4,7 +4,7 @@
 
 -define(TIMETHRESH, 5*60).
 
--export([start_link/0,send_topo/2]).
+-export([start_link/0,send_topo/2,get_topo/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -29,6 +29,10 @@ send_topo(To, Msg) ->
   gen_server:cast(To, Msg).
 
 
+get_topo() ->
+  gen_server:call(?MODULE, get_topo).
+
+
 %%=============================
 %% gen_server callbacks
 %%=============================
@@ -36,20 +40,35 @@ send_topo(To, Msg) ->
 init([]) ->
   {ok, #state{}}.
 
+
 handle_call(get_topo, _From, State) ->
   VNow = State#state.nowV,
   ENow = State#state.nowE,
   VLost = ordsets:subtract(State#state.maxV, VNow),
   ELost = ordsets:subtract(State#state.maxE, ENow),
+  VN = ordsets:fold(fun format_mac/2, ordsets:new(), VNow),
+  EN = ordsets:fold(fun format_mac/2, ordsets:new(), ENow),
+  VL = ordsets:fold(fun format_mac/2, ordsets:new(), VLost),
+  EL = ordsets:fold(fun format_mac/2, ordsets:new(), ELost),
   %% TODO format_mac
-  {reply, 'TODO', State};
+  {reply, [vertices, {VN, VL},
+           edges, {EN, EL}],
+   State};
 handle_call(_Request, _From, State) ->
   {reply, ignored, State}.
 
 
 handle_cast(update_lldp, State) ->
-  syn:publish(sw_topo, {update_lldp, self()}),
-  {noreply, State};
+  Now = calendar:datetime_to_gregorian_seconds(os:timestamp()),
+  case State#state.epoch + ?TIMETHRESH > Now of
+    true ->
+      {noreply, State};
+    false ->
+      syn:publish(sw_topo, {update_lldp, self()}),
+      {noreply, State#state{epoch = Now,
+                            nowV = ordsets:new(),
+                            nowE = ordsets:new()}}
+  end;
 handle_cast({local_topo, Vertices, Edges}, State) ->
   %% TODO
   {noreply, State};
