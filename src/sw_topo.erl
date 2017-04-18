@@ -4,7 +4,7 @@
 
 -define(TIMETHRESH, 5*60).
 
--export([start_link/0]).
+-export([start_link/0,send_topo/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -24,6 +24,14 @@
 start_link() ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
+
+send_topo(To, Msg) ->
+  gen_server:cast(To, Msg).
+
+
+%%=============================
+%% gen_server callbacks
+%%=============================
 
 init([]) ->
   {ok, #state{}}.
