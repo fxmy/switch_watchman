@@ -28,4 +28,5 @@ route(<<>>) -> index;
 % route(<<"static/spa/login",_/binary>>) -> login;
 route(<<"logout",_/binary>>) -> logout;
 route(<<"login",_/binary>>) -> login;
+route(<<"topo",_/binary>>) -> topo;
 route(_) -> login.
