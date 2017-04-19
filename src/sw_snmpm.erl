@@ -3,13 +3,10 @@
 
 -include_lib("snmp/include/snmp_types.hrl").
 
--compile([export_all]).
-
 -export([start_link/3]).
 -export([init/1,
          handle_info/2,
          terminate/2]).
--export([table/3]).
 
 -record(state,{snmpm_user,snmpm_agent,
                scalars=[],tables=[]}).

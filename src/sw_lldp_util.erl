@@ -2,7 +2,8 @@
 
 -include_lib("snmp/include/snmp_types.hrl").
 -include("include/LLDP-MIB.hrl").
--compile([export_all]).
+
+-export([parse_vertex/2,parse_edge/2]).
 
 -spec lldpChassisIdSubtype(Varbind | integer()) ->
   atom() when Varbind :: snmp:varbind().
