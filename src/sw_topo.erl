@@ -4,7 +4,7 @@
 
 -define(TIMETHRESH, 5*60).
 
--export([start_link/0,send_topo/2,get_topo/0,update_topo/0]).
+-export([start_link/0,send_topo/2,get_topo/0,update_topo/0,web_notifier/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -18,7 +18,8 @@
                 maxV = ordsets:new(),
                 maxE = ordsets:new(),
                 nowV = ordsets:new(),
-                nowE = ordsets:new()}).
+                nowE = ordsets:new(),
+                timer_ref}).
 
 
 start_link() ->
@@ -32,8 +33,15 @@ send_topo(To, Msg) ->
 get_topo() ->
   gen_server:call(?MODULE, get_topo).
 
+
 update_topo() ->
   gen_server:cast(?MODULE, update_lldp).
+
+
+web_notifier() ->
+  update_topo(),
+  timer:sleep(5000),
+  wf:send(sw_topo_web, {client, display_topo}).
 
 
 %%=============================
@@ -41,7 +49,9 @@ update_topo() ->
 %%=============================
 
 init([]) ->
-  {ok, #state{}}.
+  erlang:process_flag(trap_exit, true),
+  {ok, Ref} = timer:apply_interval(1000*?TIMETHRESH, sw_topo, web_notifier, []),
+  {ok, #state{timer_ref = Ref}}.
 
 
 handle_call(get_topo, _From, State) ->
@@ -95,7 +105,8 @@ handle_info(_Info, State) ->
   {noreply, State}.
 
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+  timer:cancel(State#state.timer_ref),
   ok.
 
 
