@@ -63,9 +63,8 @@ handle_call(get_topo, _From, State) ->
   EN = ordsets:fold(fun format_edg_mac/2, ordsets:new(), ENow),
   VL = ordsets:fold(fun format_ver_mac/2, ordsets:new(), VLost),
   EL = ordsets:fold(fun format_edg_mac/2, ordsets:new(), ELost),
-  %% TODO format_mac
-  {reply, [vertices, {VN, VL},
-           edges, {EN, EL}],
+  {reply, [{vertices, {VN, VL}},
+           {edges, {EN, EL}}],
    State};
 handle_call(_Request, _From, State) ->
   {reply, ignored, State}.
