@@ -11,7 +11,17 @@
     n2o
    ]},
   {env,[]},
-  {modules, []},
+  {modules, [config,
+             routes,
+             switch_watchman_app,
+             switch_watchman_sup,
+             sw_lldp_util,
+             sw_snmpm,
+             sw_snmpm_sup,
+             sw_topo,
+             index,
+             login,
+             topo]},
 
   {maintainers, []},
   {licenses, []},
