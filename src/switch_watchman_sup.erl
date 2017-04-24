@@ -43,13 +43,13 @@ sw_snmpm_sup() ->
   {sw_snmpm_sup, {sw_snmpm_sup, start_link, []}, permanent, 5000, supervisor, [sw_snmpm_sup]}.
 spec()   -> ranch:child_spec(http, 100, ranch_tcp, port(), cowboy_protocol, env()).
 env()    -> [ { env, [ { dispatch, points() } ] } ].
-static() ->   { dir, "priv/assets", mime() }.
+static() ->   { priv_dir, switch_watchman, "assets", mime() }.
 n2o()    ->   { dir, "deps/n2o/priv",           mime() }.
 mime()   -> [ { mimetypes, cow_mimetypes, all   } ].
 port()   -> [ { port, wf:config(n2o,port,8000)  } ].
 points() -> cowboy_router:compile([{'_', [
 
-    {"/assets/[...]",       n2o_static,  static()},
+    {"/assets/[...]",       cowboy_static,  static()},
     {"/n2o/[...]",          n2o_static,  n2o()},
     {"/multipart/[...]",  n2o_multipart, []},
     {"/rest/:resource",     rest_cowboy, []},
