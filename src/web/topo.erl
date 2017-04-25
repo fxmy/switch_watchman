@@ -114,9 +114,9 @@ vis_add_node(Id, Name, Color, offline) ->
   ["vis_dt.nodes.add({id:'",Id,"',label:'",Name,"\\n",Id,"',color:'",Color,"',shapeProperties:{borderDashes:[10,5]}});"].
 
 vis_add_edge(From, To, Label, Title, Color, online) ->
-  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',arrows:'to',color:'",Color,"',font: {align: 'middle'},title:'",[Label, ",\\n", Title],"'});"];
+  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',arrows:'to',color:'",Color,"',font: {align: 'middle'},title:'",Label, "<br>", Title,"'});"];
 vis_add_edge(From, To, Label, Title, Color, offline) ->
-  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',arrows:'to',color:'",Color,"',font: {align: 'middle'},title:'",[Label, ",\\n", Title],"',dashes:true});"].
+  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',arrows:'to',color:'",Color,"',font: {align: 'middle'},title:'",Label, "<br>", Title,"',dashes:true});"].
 
 
 color_online() -> "#00DA7D".
