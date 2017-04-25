@@ -82,9 +82,11 @@ vis_container() ->
 
 vis_options() ->
   ["var opt = {nodes:{shape:'box',borderWidth:2,shadow:true},
-   edges:{width:2,shadow:true,smooth:{type:'continuous'},length:500},
-   physics:false};"].
+   edges:{width:2,shadow:true,smooth:{type:'continuous'},length:300},
+   physics:{enabled:true,barnesHut:{centralGravity:0.0001,gravitationalConstant:150,springLength:300}}};"].
 %% layout:{hierarchical:{direction:'UD'}},
+%% physics:{enabled:false,forceAtlas2Based:{centralGravity:0.01,gravitationalConstant:50}}};"].
+%% physics:{enabled:true,barnesHut:{centralGravity:0.005,gravitationalConstant:100}}};"].
 
 vis_nodes() ->
   ["var nds = new vis.DataSet([]);"].
