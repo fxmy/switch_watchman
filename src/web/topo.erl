@@ -82,12 +82,31 @@ vis_container() ->
 
 vis_options() ->
   ["var opt = {nodes:{shape:'box',borderWidth:2,shadow:true},
-   edges:{width:2,shadow:true,smooth:{type:'continuous'},length:300},
-   interaction:{hideEdgesOnDrag: true},
-   physics:{enabled:false,forceAtlas2Based:{centralGravity:-100,gravitationalConstant:50}}};"].
+   edges:{width:1,shadow:true,smooth:{type:'continuous',roundness:0.9},length:300,arrows:{middle:{scaleFactor:0.5}}},
+   interaction:{hideEdgesOnDrag: true},layout:{hierarchical:{direction:'UD',levelSeparation:300}},
+   physics:{enabled:false,hierarchicalRepulsion:{nodeDistance:200,centralGravity:0}}};"].
+
 %% layout:{hierarchical:{direction:'UD'}},
 %% physics:{enabled:false,forceAtlas2Based:{centralGravity:0.01,gravitationalConstant:50}}};"].
 %% physics:{enabled:true,barnesHut:{centralGravity:0.005,gravitationalConstant:100}}};"].
+%%
+%%opt = {
+%%      nodes:{shape:'box',
+%%             borderWidth:2,
+%%             shadow:true},
+%%      edges:{width:1,
+%%             shadow:true,
+%%             smooth:{type:'continuous',
+%%                     roundness:0.9},
+%%             length:300,
+%%             arrows:{middle:{scaleFactor:0.5}}},
+%%      interaction:{hideEdgesOnDrag: true},
+%%      layout:{hierarchical:{direction:'UD',
+%%                            levelSeparation:300}},
+%%      physics:{enabled:true,
+%%               hierarchicalRepulsion:{nodeDistance:200,
+%%                                      centralGravity:0}}};
+
 
 vis_nodes() ->
   ["var nds = new vis.DataSet([]);"].
@@ -114,9 +133,9 @@ vis_add_node(Id, Name, Color, offline) ->
   ["vis_dt.nodes.add({id:'",Id,"',label:'",Name,"\\n",Id,"',color:'",Color,"',shapeProperties:{borderDashes:[10,5]}});"].
 
 vis_add_edge(From, To, Label, Title, Color, online) ->
-  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',arrows:'to',color:'",Color,"',font: {align: 'middle'},title:'",Label, "<br>", Title,"'});"];
+  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',color:'",Color,"',font: {align: 'middle'},title:'",Label, "<br>", Title,"'});"];
 vis_add_edge(From, To, Label, Title, Color, offline) ->
-  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',arrows:'to',color:'",Color,"',font: {align: 'middle'},title:'",Label, "<br>", Title,"',dashes:true});"].
+  ["vis_dt.edges.add({from:'",From,"',to:'",To,"',color:'",Color,"',font: {align: 'middle'},title:'",Label, "<br>", Title,"',dashes:true});"].
 
 
 color_online() -> "#00DA7D".
