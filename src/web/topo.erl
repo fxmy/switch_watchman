@@ -82,8 +82,8 @@ vis_container() ->
 
 vis_options() ->
   ["var opt = {nodes:{shape:'box',borderWidth:2,shadow:true},
-   edges:{width:2,shadow:true,smooth:{type:'continuous'},length:450},
-   physics:true};"].
+   edges:{width:2,shadow:true,smooth:{type:'continuous'},length:500},
+   physics:false};"].
 %% layout:{hierarchical:{direction:'UD'}},
 
 vis_nodes() ->
