@@ -40,7 +40,7 @@ update_topo() ->
 
 web_notifier() ->
   update_topo(),
-  timer:sleep(5000),
+  timer:sleep(10000),
   wf:send(sw_topo_web, {client, display_topo}).
 
 
@@ -59,10 +59,10 @@ handle_call(get_topo, _From, State) ->
   ENow = State#state.nowE,
   VLost = ordsets:subtract(State#state.maxV, VNow),
   ELost = ordsets:subtract(State#state.maxE, ENow),
-  VN = ordsets:fold(fun format_ver_mac/2, ordsets:new(), VNow),
-  EN = ordsets:fold(fun format_edg_mac/2, ordsets:new(), ENow),
-  VL = ordsets:fold(fun format_ver_mac/2, ordsets:new(), VLost),
-  EL = ordsets:fold(fun format_edg_mac/2, ordsets:new(), ELost),
+  VN = ordsets:fold(fun format_ver_id/2, ordsets:new(), VNow),
+  EN = ordsets:fold(fun format_edg_id/2, ordsets:new(), ENow),
+  VL = ordsets:fold(fun format_ver_id/2, ordsets:new(), VLost),
+  EL = ordsets:fold(fun format_edg_id/2, ordsets:new(), ELost),
   {reply, [{vertices, {VN, VL}},
            {edges, {EN, EL}}],
    State};
@@ -116,55 +116,47 @@ code_change(_OldVsn, State, _Extra) ->
 %% Internal functions
 %%===============================
 
--spec format_edg_mac(Element, AccIn) ->
+-spec format_edg_id(Element, AccIn) ->
   AccOut when
     Element :: maps:map(),
     AccIn :: ordsets:ordset(),
     AccOut :: ordsets:ordset().
-format_edg_mac(Element, AccIn) ->
+format_edg_id(Element, AccIn) ->
   From = maps:get(from, Element),
+  FromSubtype = maps:get(fromSubtype, Element),
   To = maps:get(to, Element),
-  LocPortId = maybe_mac(maps:get(lldpLocPortId, Element)),
-  RemPortId = maybe_mac(maps:get(lldpRemPortId, Element)),
+  ToSubtype = maps:get(toSubtype, Element),
+  LocPortId = maps:get(lldpLocPortId, Element),
+  LocPortIdType = maps:get(lldpLocPortIdSubtype, Element),
+  RemPortId = maps:get(lldpRemPortId, Element),
+  RemPortIdType = maps:get(lldpRemPortIdSubtype, Element),
   ordsets:add_element(
-    Element#{from => octet_to_binary(From),
-             to => octet_to_binary(To),
-             lldpLocPortId => LocPortId,
-             lldpRemPortId => RemPortId},
+    Element#{from => format_printable(FromSubtype, From),
+             to => format_printable(ToSubtype, To),
+             lldpLocPortId => format_printable(LocPortIdType, LocPortId),
+             lldpRemPortId => format_printable(RemPortIdType, RemPortId)},
     AccIn).
 
 
--spec format_ver_mac(Element, AccIn) ->
+-spec format_ver_id(Element, AccIn) ->
   AccOut when
     Element :: maps:map(),
     AccIn :: ordsets:ordset(),
     AccOut :: ordsets:ordset().
-format_ver_mac(Element, AccIn) ->
-  ElementNew =
-  case maps:get(lldpChassisIdSubtype, Element, unknown) of
-    macAddress ->
-      ChassisId = maps:get(lldpChassisId, Element),
-      Element#{lldpChassisId => octet_to_binary(ChassisId)};
-    _ ->
-      Element
-  end,
+format_ver_id(Element, AccIn) ->
+  ChassisId = maps:get(lldpChassisId, Element),
+  IdSubtype = maps:get(lldpChassisIdSubtype, Element, unknown),
+  Id1 = format_printable(IdSubtype, ChassisId),
+  ElementNew = Element#{lldpChassisId => Id1},
   ordsets:add_element(ElementNew, AccIn).
 
 
--spec maybe_mac([integer()]) -> binary().
-maybe_mac(List) ->
-  case length(List) of
-    6 ->
-      octet_to_binary(List);
-    _ ->
-      List
-  end.
-
-
--spec octet_to_binary(Octs) -> binary() when
-    Octs :: [integer()].
-octet_to_binary(Octs) ->
-  IoList =
+-spec format_printable(Type, Data) ->
+  string() when Type :: atom, Data :: list().
+format_printable(macAddress, Octs) ->
   [io_lib:format("~2..0s", [integer_to_list(X, 16)])
-   || X <- Octs],
-  wf:to_binary(IoList).
+   || X <- Octs];
+format_printable(networkAddress, Data) ->
+  string:join([integer_to_list(X)||X<-Data], ".");
+format_printable(_Other, Data) ->
+  io_lib:format("~s", [Data]).

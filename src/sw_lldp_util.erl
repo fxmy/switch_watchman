@@ -5,6 +5,33 @@
 
 -export([parse_vertex/2,parse_edge/2]).
 
+-spec lldpPortIdSubtype(Varbind | integer()) ->
+  atom() when Varbind :: snmp:varbind().
+lldpPortIdSubtype(#varbind{value=Value}) ->
+  port_type(Value);
+lldpPortIdSubtype(Value) ->
+  port_type(Value).
+
+-spec port_type(integer()) -> atom().
+port_type(Value) ->
+  case Value of
+    ?LldpPortIdSubtype_interfaceAlias ->
+      interfaceAlias;
+    ?LldpPortIdSubtype_portComponent ->
+      portCompoent;
+    ?LldpPortIdSubtype_macAddress ->
+      macAddress;
+    ?LldpPortIdSubtype_networkAddress ->
+      networkAddress;
+    ?LldpPortIdSubtype_interfaceName ->
+      interfaceName;
+    ?LldpPortIdSubtype_agentCircuitId ->
+      agentCircuitId;
+    ?LldpPortIdSubtype_local ->
+      local;
+    _ -> unknown
+  end.
+
 -spec lldpChassisIdSubtype(Varbind | integer()) ->
   atom() when Varbind :: snmp:varbind().
 lldpChassisIdSubtype(#varbind{value=Value}) ->
@@ -126,25 +153,34 @@ parse_local_vertex(_, AccIn) ->
          TableData :: [tuple()].
 parse_edge(LocalVertex, TableData) ->
   From = maps:get(lldpChassisId, LocalVertex),
+  FromSubtype = maps:get(lldpChassisIdSubtype, LocalVertex),
   RemTable = proplists:get_value(lldpRemTable, TableData),
   LocPortTable = proplists:get_value(lldpLocPortTable, TableData),
-  lists:foldl(rem_entry_2_edge(From, LocPortTable),
+  lists:foldl(rem_entry_2_edge(From, FromSubtype, LocPortTable),
               [], RemTable).
 
-rem_entry_2_edge(From, LocPortTable) ->
+rem_entry_2_edge(From, FromSubtype, LocPortTable) ->
   fun({RemIdx, RemEntry}, AccIn) ->
       {_, To} = maps:get(lldpRemChassisId, RemEntry),
+      {_, ToSubtype} = maps:get(lldpRemChassisIdSubtype, RemEntry),
       {_, RemPortId} = maps:get(lldpRemPortId, RemEntry),
+      {_, RemPortIdSubtype} = maps:get(lldpRemPortIdSubtype, RemEntry),
       {_, RemPortDesc} = maps:get(lldpRemPortDesc, RemEntry),
       {_, LocPortId} =
       rem_tab_idx_2_loc_port(RemIdx, lldpLocPortId, LocPortTable),
+      {_, LocPortIdSubtype} =
+      rem_tab_idx_2_loc_port(RemIdx, lldpLocPortIdSubtype, LocPortTable),
       {_, LocPortDesc} =
       rem_tab_idx_2_loc_port(RemIdx, lldpLocPortDesc, LocPortTable),
       Res = #{from => From,
+              fromSubtype => FromSubtype,
               to => To,
+              toSubtype => lldpChassisIdSubtype(ToSubtype),
               lldpRemPortId => RemPortId,
+              lldpRemPortIdSubtype => lldpPortIdSubtype(RemPortIdSubtype),
               lldpRemPortDesc => RemPortDesc,
               lldpLocPortId => LocPortId,
+              lldpLocPortIdSubtype => lldpPortIdSubtype(LocPortIdSubtype),
               lldpLocPortDesc => LocPortDesc},
       [Res|AccIn]
   end.
