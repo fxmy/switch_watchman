@@ -5,7 +5,10 @@
 
 -export([start_link/3]).
 -export([init/1,
+         handle_call/3,
+         handle_cast/2,
          handle_info/2,
+         code_change/3,
          terminate/2]).
 
 -record(state,{snmpm_user,snmpm_agent,
@@ -39,6 +42,18 @@ init([User, Agent, ManagedObjects]) ->
               tables = Tables}}.
 
 
+-spec handle_call(term(), term(), #state{}) ->
+  {reply, ignore, #state{}}.
+handle_call(_Req, _From, State) ->
+  {reply, ignore, State}.
+
+
+-spec handle_cast(term(), #state{}) ->
+  {noreply, #state{}}.
+handle_cast(_Req, State) ->
+  {noreply, State}.
+
+
 -spec handle_info({Info :: atom(), From :: pid()},
                   #state{}) ->
   {noreply, #state{}} |
@@ -64,6 +79,12 @@ handle_info({update_lldp, From},
 terminate(Reason, _State) ->
   error_logger:info_msg("Terminating sw_snmpm ~p with reason: ~p", [#state.snmpm_agent, Reason]),
   terminated.
+
+
+-spec code_change(term()|{down,term()}, term(), term()) ->
+  {ok, term()} | {error, term()}.
+code_change(_OldVsn, State, _Extra) ->
+  {ok, State}.
 
 %% ============================================
 %% Internal
