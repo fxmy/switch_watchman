@@ -11,6 +11,8 @@
 -record(state,{snmpm_user,snmpm_agent,
                scalars=[],tables=[]}).
 
+-define(BULK_STEP, 50).
+
 
 -spec start_link(User::term(),Agent::term(),proplists:prolist()) ->
   {ok, pid()} | {error, term()}.
@@ -70,14 +72,8 @@ terminate(Reason, _State) ->
 -spec get_scalar_instances(User :: term(), Agent :: term(), Scalars :: [atom()]) ->
   [tuple()].
 get_scalar_instances(User, Agent, ScalarNames) ->
-  % Varbinds =
-  % lists:foldl(
-  %   fun(Name, AccIn) ->
-  %       [yank_varbid(scalar(User, Agent, Name))|AccIn]
-  %   end, [], ScalarNames),
   Varbinds = [yank_varbid(scalar(User, Agent, Name))
         || Name <- ScalarNames],
-  % Vb = lists:reverse(Varbinds),
   lists:zip(ScalarNames, Varbinds).
 
 
@@ -116,17 +112,11 @@ scalar(User, Agent, Name) ->
                  Agent :: term(),
                  Tables :: [atom()].
 get_table_instances(User, Agent, Tables) ->
-  % TData =
-  % lists:foldl(fun(TableName,AccIn) ->
-  %                 {_OkORError, Res} = table(User, Agent, TableName),
-  %                 [Res|AccIn]
-  %             end, [], Tables),
   TData = [begin
           {_OkORError, Res} = table(User, Agent, TableName),
           Res
         end
         || TableName <- Tables],
-  % TD = lists:reverse(TData),
   lists:zip(Tables, TData).
 
 
@@ -156,39 +146,33 @@ table(User, Agent, Name) ->
          ProList :: proplists:proplist(),
          Why :: term().
 table_recurse(User, Agent, OidRoot, OidPre, Acc) ->
-%  case lists:prefix(OidRoot, OidPre) of
-%    false ->
-%      {ok, Acc};
-%    true ->
-  %error_logger:info_msg("table_recurse: ~p, ~p, ~p", [OidRoot, OidPre, Acc]),
-  case snmpm:sync_get_next(User, Agent, [OidPre]) of
+  case snmpm:sync_get_bulk(User, Agent, 0, ?BULK_STEP, [OidPre]) of
     {error, Why} ->
       {error, Why};
-    {ok, SnmpReply, _Remaining} ->
-      case lists:prefix(OidRoot, extract_oid(SnmpReply)) of
-        true ->
-          %error_logger:info_msg("updating acc"),
-          {AccNew, OidSelf} = update_acc(SnmpReply, Acc),
-          table_recurse(User, Agent, OidRoot, OidSelf, AccNew);
-        false ->
-          {ok, Acc}
-      end
+    {ok, {noError, _ErrIdx, Varbinds}, _Remaining} ->
+      filter_and_continue(User, Agent, Varbinds, OidRoot, OidPre, Acc)
   end.
-%  end.
 
 
--spec extract_oid({noError, _ErrIdx :: snmpm:error_index(), [#varbind{}]}) ->
-  Oid :: snmp:oid().
-extract_oid({noError, _ErrIdx, [Varbind=#varbind{}]}) ->
-  Varbind#varbind.oid;
-extract_oid(_) ->
-  [].
+-spec filter_and_continue(term(), term(), [#varbind{}],
+                          list(), list(), proplists:proplist()) ->
+  proplists:proplist().
+filter_and_continue(User, Agent, [], OidRoot, OidPre, Acc) ->
+  table_recurse(User, Agent, OidRoot, OidPre, Acc);
+filter_and_continue(User, Agent, [H|T], OidRoot, _OidPre, Acc) ->
+  case lists:prefix(OidRoot, H#varbind.oid) of
+    false ->
+      {ok, Acc};
+    true ->
+      {AccNew, OidSelf} = update_acc(H, Acc),
+      filter_and_continue(User, Agent, T, OidRoot, OidSelf, AccNew)
+  end.
 
 
--spec update_acc({noError, _ErrIdx :: snmpm:error_index(), [#varbind{}]},
+-spec update_acc(#varbind{},
                  Acc :: proplists:proplist()) ->
   {Acc1 :: proplists:prolist(), Oid :: snmp:oid()}.
-update_acc({noError, _ErrIdx, [Varbind=#varbind{}]}, Acc) ->
+update_acc(Varbind=#varbind{}, Acc) ->
   Oid = Varbind#varbind.oid,
   VarType = Varbind#varbind.variabletype,
   Value = Varbind#varbind.value,
@@ -201,7 +185,6 @@ update_acc({noError, _ErrIdx, [Varbind=#varbind{}]}, Acc) ->
            false ->
              [{EntryIdx, Map1} | Acc]
          end,
-  %error_logger:info_msg("update_acc: ~p, ~p", [Acc1, Oid]),
   {Acc1, Oid}.
 
 
@@ -214,12 +197,10 @@ mib_entry_type(Oid) when is_list(Oid) ->
 -spec mib_entry_type(Oid :: snmp:oid(), [integer()]) ->
   {[integer()], atom()}.
 mib_entry_type(Oid, EntryIdx) ->
-  %error_logger:info_msg("mib_entry_type: ~p, ~p", [Oid, EntryIdx]),
   case snmpm:oid_to_name(Oid) of
     {error, not_found} ->
       [EntryIdxUpper|OidUpper] = lists:reverse(Oid),
       mib_entry_type(lists:reverse(OidUpper), [EntryIdxUpper|EntryIdx]);
     {ok, EntryType} ->
-      %error_logger:info_msg("EntryIdx: ~p, EntryType: ~p~n", [EntryIdx, EntryType]),
       {EntryIdx, EntryType}
   end.
