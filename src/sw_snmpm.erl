@@ -14,7 +14,7 @@
 -record(state,{snmpm_user,snmpm_agent,
                scalars=[],tables=[]}).
 
--define(BULK_STEP, 50).
+-define(BULK_STEP, 80).
 
 
 -spec start_link(User::term(),Agent::term(),proplists:prolist()) ->
