@@ -21,4 +21,4 @@ init([]) ->
     {sw_snmpm, start_link, [User, A, ManagedObjs]},
     permanent, 5000, worker, [sw_snmpm]}
    || A <- Agents],
-  {ok, {{one_for_one, 2, 5*60}, Children}}.
+  {ok, {{one_for_one, length(Agents), 5*60}, Children}}.
