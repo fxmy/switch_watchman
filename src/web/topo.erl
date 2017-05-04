@@ -25,11 +25,10 @@ body() ->
 
 event(init) ->
   wf:reg(sw_topo_web),
-  wf:wire([vis_init_network(),draw_topo()]);
+  wf:wire([draw_topo()]);
 event(terminate) ->
   wf:unreg(sw_topo_web);
 event(#client{data=display_topo}) ->
-  sw_topo:get_topo(),
   wf:wire(<<"console.log(Date().toLocaleString());"/utf8>>),
   wf:wire([vis_clear(),draw_topo()]);
 event(E) ->
@@ -73,15 +72,15 @@ draw_topo() ->
                         color_offline(), offline)
          end|| X <- EOffline],
 
-  [WV1, WV2, WE1, WE2, "vis_topo.stabilize(300);"].
+  [vis_init_network(), WV1, WV2, WE1, WE2, vis_network(), "vis_topo.stabilize(1000);"].
 
 
 %%% visjs
 vis_container() ->
-  ["var ct = document.getElementById('topo_net');"].
+  ["ct = document.getElementById('topo_net');"].
 
 vis_options() ->
-  ["var opt = {nodes:{shape:'box',borderWidth:2,shadow:true},
+  ["opt = {nodes:{shape:'box',borderWidth:2,shadow:true},
    edges:{width:1,shadow:true,smooth:{type:'continuous',roundness:0.9},length:300,arrows:{middle:{scaleFactor:0.5}}},
    interaction:{hideEdgesOnDrag: true},layout:{hierarchical:{direction:'UD',levelSeparation:300}},
    physics:{enabled:false,hierarchicalRepulsion:{nodeDistance:200,centralGravity:0}}};"].
@@ -121,11 +120,11 @@ vis_network() ->
   ["vis_topo = new vis.Network(ct, vis_dt, opt);"].
 
 vis_init_network() ->
-  N = vis_nodes(), E = vis_edges(), C = vis_container(), D = vis_data(), O = vis_options(), NW = vis_network(),
-  [N, E, C, D, O, NW].
+  N = vis_nodes(), E = vis_edges(), C = vis_container(), D = vis_data(), O = vis_options(),
+  [N, E, C, D, O].
 
 vis_clear() ->
-  ["vis_dt.nodes.clear();vis_dt.edges.clear();"].
+  ["vis_topo.destroy();"].
 
 vis_add_node(Id, Name, Color, online) ->
   ["vis_dt.nodes.add({id:'",Id,"',label:'",Name,"\\n",Id,"',color:'",Color,"'});"];
