@@ -9,6 +9,7 @@
          handle_cast/2,
          handle_info/2,
          code_change/3,
+         get_table_instances/3,
          terminate/2]).
 
 -record(state,{snmpm_user,snmpm_agent,
@@ -134,9 +135,11 @@ scalar(User, Agent, Name) ->
                  Tables :: [atom()].
 get_table_instances(User, Agent, Tables) ->
   TData = [begin
-          {_OkORError, Res} = table(User, Agent, TableName),
-          Res
-        end
+             case table(User, Agent, TableName) of
+               {ok, Res} -> Res;
+               {error, _} -> []
+             end
+           end
         || TableName <- Tables],
   lists:zip(Tables, TData).
 
@@ -171,6 +174,7 @@ table_recurse(User, Agent, OidRoot, OidPre, Acc) ->
     {error, Why} ->
       {error, Why};
     {ok, {noError, _ErrIdx, Varbinds}, _Remaining} ->
+      wf:info(?MODULE, "BULK: ~p~n", [Varbinds]),
       filter_and_continue(User, Agent, Varbinds, OidRoot, OidPre, Acc)
   end.
 
