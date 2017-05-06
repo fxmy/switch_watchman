@@ -50,6 +50,7 @@ web_notifier() ->
 
 init([]) ->
   erlang:process_flag(trap_exit, true),
+  {ok, _} = timer:apply_after(5000, syn, publish, [sw_topo, {update_lldp, self()}]),
   {ok, Ref} = timer:apply_interval(1000*?TIMETHRESH, sw_topo, web_notifier, []),
   {ok, #state{timer_ref = Ref}}.
 
