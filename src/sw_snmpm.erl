@@ -9,7 +9,6 @@
          handle_cast/2,
          handle_info/2,
          code_change/3,
-         get_table_instances/3,
          terminate/2]).
 
 -record(state,{snmpm_user,snmpm_agent,
@@ -94,39 +93,10 @@ code_change(_OldVsn, State, _Extra) ->
 -spec get_scalar_instances(User :: term(), Agent :: term(), Scalars :: [atom()]) ->
   [tuple()].
 get_scalar_instances(User, Agent, ScalarNames) ->
-  Varbinds = [yank_varbid(scalar(User, Agent, Name))
-        || Name <- ScalarNames],
+  Oids = [begin {ok,[Y]} = snmpm:name_to_oid(X),Y end || X <- ScalarNames],
+  {ok, {noError, _ErrIdx, Varbinds}, _Remaining} =
+  snmpm:sync_get_next(User, Agent, Oids),
   lists:zip(ScalarNames, Varbinds).
-
-
--spec yank_varbid({ok, SnmpReply, Remaining} |
-                  {error, Why}) ->
-  Varbind | Why
-    when SnmpReply :: snmpm:snmp_reply(),
-         Remaining :: integer(),
-         Varbind :: snmp:varbind(),
-         Why :: term().
-yank_varbid({error, Why}) ->
-  Why;
-yank_varbid({ok, {_ErrStatus, _ErrIdx, [Varbind=#varbind{}]}, _Remaining}) ->
-  Varbind.
-
-
--spec scalar(User, Agent, Name) ->
-  {ok, SnmpReply, Remaining} | {error, Why}
-    when User :: term(),
-         Agent :: term(),
-         Name :: atom(),
-         SnmpReply :: snmpm:snmp_reply(),
-         Remaining :: integer(),
-         Why :: term().
-scalar(User, Agent, Name) ->
-  case snmpm:name_to_oid(Name) of
-    {error, Why} ->
-      {error, Why};
-    {ok, Oids} ->
-      snmpm:sync_get_next(User, Agent, Oids)
-  end.
 
 
 -spec get_table_instances(User, Agent, Tables) ->
