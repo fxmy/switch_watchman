@@ -59,8 +59,13 @@ handle_cast(_Req, State) ->
   {noreply, #state{}} |
   {noreply, #state{}, Timeout :: non_neg_integer()} |
   {stop, Reason :: any(), #state{}}.
-handle_info({update_lldp, From},
-            State=#state{snmpm_user=User,
+handle_info({update_lldp, From}, State) ->
+  {ok,_Res} = sv:run(sw_snmpm, fun() -> update_lldp(From, State) end),
+  {noreply, State}.
+
+
+-spec update_lldp(pid(),#state{}) -> ok.
+update_lldp(From, #state{snmpm_user=User,
                          snmpm_agent=Agent,
                          scalars=Scalars,
                          tables=Tables}) ->
@@ -71,8 +76,8 @@ handle_info({update_lldp, From},
   {LocalVertex, RemVertices} =
   sw_lldp_util:parse_vertex(ScalarData, TableData),
   Edges = sw_lldp_util:parse_edge(LocalVertex, TableData),
-  sw_topo:send_topo(From, {local_topo, [LocalVertex|RemVertices], Edges}),
-  {noreply, State}.
+  sw_topo:send_topo(From, {local_topo, [LocalVertex|RemVertices], Edges}).
+
 
 
 -spec terminate(Reason :: any(), #state{}) -> terminated.

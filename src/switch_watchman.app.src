@@ -8,6 +8,7 @@
     stdlib,
     snmp,
     syn,
+    safetyvalve,
     n2o
    ]},
   {env,[]},
